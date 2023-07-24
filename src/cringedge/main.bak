@@ -1,0 +1,65 @@
+use std::error::Error;
+// use std::io::{self, Read, Write};
+use std::fs::OpenOptions;
+// use std::thread;
+use std::time::Duration;
+use std::env;
+
+fn main() -> Result<(), Box<dyn Error>> {
+
+}
+
+// fn spawn_serial_listner_for_port(port: &str) -> Result<(), Box<dyn Error>> {
+//     let mut serial_port = SerialPort::new(port, 115200)
+//         .timeout(Duration::from_millis(10))
+//         .open_native()?;
+//     loop {
+//         let mut serial_buf: Vec<u8> = vec![0; 100];
+//         let num_bytes_read = serial_port.read(serial_buf.as_mut_slice())?;
+//         if num_bytes_read > 0 {
+//             let mut file = OpenOptions::new()
+//                 .write(true)
+//                 .append(true)
+//                 .open(format!("/tmp/serial_{port}.log"))?;
+//             file.write_all(&serial_buf[0..num_bytes_read])?;
+//         }
+//     }
+// }
+
+
+// // Open the serial port
+// let mut serial_port = OpenOptions::new()
+// .read(true)
+// .write(true)
+// .open("/dev/ttyUSB0")?; // Replace with the appropriate serial port device path
+
+// // Configure serial port settings (e.g., baud rate, data bits, parity)
+// // serial_port.set_baud_rate(...)?;
+// // serial_port.set_data_bits(...)?;
+// serial_port.set_parity(...)?;
+// ...
+
+// // Spawn a background thread for serial communication
+// thread::spawn(move || {
+// loop {
+//     let mut buffer = [0u8; 1024]; // Adjust buffer size as needed
+//     match serial_port.read(&mut buffer) {
+//         Ok(bytes_read) => {
+//             // Process the received data
+//             if bytes_read > 0 {
+//                 print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
+//             }
+//         }
+//         Err(err) => {
+//             // Handle read error
+//             eprintln!("Serial read error: {}", err);
+//         }
+//     }
+
+//     // Add your desired logic for sending data through the serial port here
+//     // ...
+
+//     // Sleep for a certain duration between each iteration
+//     thread::sleep(Duration::from_millis(100));
+// }
+// });

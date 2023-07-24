@@ -1,0 +1,8 @@
+[Unit]
+BindTo=%i.device
+After=%i.device
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/opt/cringed/spawn_cringedge %I

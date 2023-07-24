@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="1001", PROGRAM+="/usr/bin/systemd-escape -p --template=cringedge@.service $env{DEVNAME}" ENV{SYSTEMD_WANTS}+="%c"
