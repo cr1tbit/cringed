@@ -1,19 +1,104 @@
-use axum::extract::path;
-use serialport::{available_ports, SerialPortType};
-use std::io::BufReader;
-use std::io::BufRead;
+use serialport;
+use std::io::{BufReader,BufRead,Read,Write};
 use std::os::unix::net::UnixListener;
 use futures::io::ErrorKind;
 
-use std::fs::OpenOptions;
-use std::fs::File;
-use std::io::Write;
-use std::fs;
-use chrono::prelude::*;
-use std::os::unix::net::UnixStream;
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc;
+use std::{thread, fmt};
 
+use std::fs;
+use chrono::Local;
+
+const CRINGED_TMP_PATH: &str = "/tmp/cringed";
+
+//define enum for button event
+enum EvtType {
+    ButtonPress,
+    ButtonRelease,
+    Overcurrent,
+    CriticalError,
+    TransportError
+}
+
+struct CringeEvt {
+    io_bank_num: u8,
+    event_type: EvtType,
+    timestamp_ms: u32
+}
+
+impl fmt::Display for CringeEvt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.event_type {
+            EvtType::ButtonPress => {
+                write!(f, "{}: button {} press",self.io_bank_num, self.timestamp_ms)
+            }
+            EvtType::ButtonRelease => {
+                write!(f, "{}: button {} release",self.io_bank_num, self.timestamp_ms)
+            }
+            EvtType::Overcurrent => {
+                write!(f, "{}: overcurrent", self.timestamp_ms)
+            }
+            EvtType::CriticalError => {
+                write!(f, "{}: critical error", self.timestamp_ms)
+            }
+            EvtType::TransportError => {
+                write!(f, "transport error")
+            }
+        }
+    }
+}
 
 fn main() {
+    let (tx, rx): (Sender<CringeEvt>, Receiver<CringeEvt>) = mpsc::channel();
+
+    thread::spawn(move || {
+        let listener = match UnixListener::bind(format!("{}/events.sock",CRINGED_TMP_PATH)) {
+            Ok(sock) => sock,
+            Err(e) => {
+                println!("Couldn't connect: {e:?}");
+                return
+            }
+        };
+        loop {
+            match listener.accept() {
+                Ok((mut socket, addr)) => {
+                    println!("Got a client: {:?} - {:?}", socket, addr);
+                    socket.write_all(b"hello world").ok();
+
+                    loop {
+                        let event = rx.recv().unwrap();
+                        socket.write_all(event.to_string().as_bytes()).ok();
+                    }
+                },
+                Err(e) => println!("accept function failed: {:?}", e),
+            }
+            println!("conn closed")
+        }
+    });
+
+    serial_monitor_loop(tx);
+}
+
+struct tmpLogFile {
+    file: fs::File,
+}
+
+impl tmpLogFile {
+    fn new(path: &str, dev_name: &str) -> std::io::Result<Self> {
+        let file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&format!("{}/{}.txt",path,dev_name))?;
+        Ok(Self { file })
+    }
+
+    fn write(&mut self, message: &str){
+        write!(self.file, "{}", message).ok();
+    }
+}
+
+fn serial_monitor_loop(tx: Sender<CringeEvt>){
     loop{
         let ports = get_compatible_ports();
         println!("Found {} compatible ports", ports.len());
@@ -27,29 +112,11 @@ fn main() {
             continue;
         }
 
-        receive_loop(&ports[0].0, &ports[0].1)
+        receive_loop(&ports[0].0, &ports[0].1,tx.clone())
     }
 }
 
-struct tmpLogFile {
-    file: File,
-}
-
-impl tmpLogFile {
-    fn new(path: &str, dev_name: &str) -> std::io::Result<Self> {
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&format!("{}/{}.txt",path,dev_name))?;
-        Ok(Self { file })
-    }
-
-    fn write(&mut self, message: &str){
-        write!(self.file, "{}", message).ok();
-    }
-}
-
-fn receive_loop(path: &str, devname: &str){
+fn receive_loop(path: &str, devname: &str, tx: Sender<CringeEvt>){
     let port_try_open = serialport::new(path, 115200)
         .timeout(std::time::Duration::from_millis(1))
         .open();
@@ -64,24 +131,14 @@ fn receive_loop(path: &str, devname: &str){
 
     let mut reader = BufReader::new(port);
 
-    let device_tmp_path = format!("/tmp/{}",devname);
+    let device_tmp_path = format!("{}/{}",CRINGED_TMP_PATH,devname);
     fs::create_dir_all(&device_tmp_path).ok();
     let mut logger = tmpLogFile::new(&device_tmp_path, "runtime_log").unwrap();
     logger.write(&format!(
         "start log, date {}", 
         Local::now().format("%Y-%m-%d").to_string())
     );
-
-    // let mut socket = match UnixListener::bind(format!("/tmp/{}/events.sock",devname)) {
-    //     Ok(sock) => sock,
-    //     Err(e) => {
-    //         println!("Couldn't connect: {e:?}");
-    //         return
-    //     }
-    // };
-
-    // socket.write_all(b"<H>").ok();
-
+    
     loop {
         let mut my_str = String::new();
         match reader.read_line(&mut my_str) {
@@ -89,6 +146,17 @@ fn receive_loop(path: &str, devname: &str){
                 match my_str.chars().next() {
                     Some('<') => {
                         print!("command: {}", my_str);
+                        match tx.send(CringeEvt{
+                            io_bank_num: 0,
+                            event_type: EvtType::ButtonPress,
+                            timestamp_ms: 0
+                        }) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("Error sending event: {}", e);
+                                continue;
+                            }
+                        }
                     }
                     None => {continue;}
                     _ => {logger.write(&my_str);}
@@ -108,14 +176,32 @@ fn receive_loop(path: &str, devname: &str){
 }
 
 
+    // let mut listener = match UnixListener::bind(format!("/tmp/{}/events.sock",devname)) {
+    //     Ok(sock) => sock,
+    //     Err(e) => {
+    //         println!("Couldn't connect: {e:?}");
+    //         return
+    //     }
+    // };
+
+    // match listener.accept() {
+    //     Ok((mut socket, addr)) => {
+    //         println!("Got a client: {:?} - {:?}", socket, addr);
+    //         socket.write_all(b"hello world").ok();
+    //         let mut response = String::new();
+    //         socket.read_to_string(&mut response).ok();
+    //         println!("{}", response);
+    //     },
+    //     Err(e) => println!("accept function failed: {:?}", e),
+    // }
 
 fn get_compatible_ports() -> Vec<(String, String)> {
     let mut port_list = Vec::new();
-    match available_ports() {
+    match serialport::available_ports() {
         Ok(ports) => {
             for p in ports {
                 match p.port_type {
-                    SerialPortType::UsbPort(info) => {
+                    serialport::SerialPortType::UsbPort(info) => {
                         if info.vid == 0x303A && info.pid == 0x1001 {
                             port_list.push(
                                 (p.port_name,
