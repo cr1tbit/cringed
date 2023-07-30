@@ -1,8 +1,15 @@
 use std::sync::Arc;
+use once_cell::sync::Lazy;
 
 use serde::Deserialize;
 use socketioxide::{adapter::LocalAdapter, Socket};
 use tracing::info;
+
+use std::sync::{RwLock, Weak};
+use std::collections::HashMap;
+
+pub(crate) static SOCKS: Lazy<RwLock<HashMap<String, Weak<Socket<LocalAdapter>>>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 // events:
 // log: debug info about system
@@ -10,7 +17,9 @@ use tracing::info;
 
 pub async fn handler(socket: Arc<Socket<LocalAdapter>>) {
     info!("Socket connected on / with id: {}", socket.sid);
-    socket.emit("log", "hello there").ok();
+    SOCKS.write().unwrap().insert(socket.sid.to_string(), Arc::downgrade(&socket));
+
+    socket.emit("log", format!("hello there {}",socket.sid)).ok();
     socket.join(["ESP","logs"]);
     socket.to("logs").emit("log", "new challenger approaches").ok();
 

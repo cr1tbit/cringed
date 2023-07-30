@@ -15,8 +15,11 @@ path = "src/cringedge/main.rs"
 
 [dependencies]
 
-engineioxide = { version = "0.3.0"}
+serialport = { version = "4.2.1"}
+engineioxide = "0.3.0"
 socketioxide = {  }
+
+once_cell = {}
 axum = { version = "0.6.10" }
 warp = { version = "0.3.1" }
 hyper = { version = "0.14.26" }
@@ -29,3 +32,4 @@ tracing = "0.1.37"
 serde = "1.0.159"
 serde_json = "1.0.95"
 futures = "0.3.27"
+chrono = "0.4.26"

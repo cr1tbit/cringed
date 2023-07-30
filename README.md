@@ -1,4 +1,4 @@
-#Cringed
+# Cringed
 
 Cringed (Connectivity Relay Interfacing Numerous, Goofy ESPs - daemon) has been created for easier interfacing with embedded peripherals from the userspace layer.
 
@@ -39,3 +39,11 @@ Cringedges can also perform a firmware update on their ESP companions easily, us
 * Attaching peripherals to SMBCs - I'd prefer destroying a random ESP from a wiring error, than a rasberry pi. 
 * Attaching peripherals to PCs.
 * (tbc.) 
+
+
+### Useful links
+
+https://documentation.suse.com/sles/12-SP4/html/SLES-all/cha-udev.html
+http://blog.fraggod.net/2015/01/12/starting-systemd-service-instance-for-device-from-udev.html
+http://0pointer.de/blog/projects/instances.html
+https://askubuntu.com/questions/49910/how-to-distinguish-between-identical-usb-to-serial-adapters
