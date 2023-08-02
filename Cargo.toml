@@ -13,6 +13,10 @@ path = "src/server/main.rs"
 name = "cringedge-handler"
 path = "src/cringedge/main.rs"
 
+[[bin]]
+name = "client"
+path = "src/mockListener/main.rs"
+
 [dependencies]
 
 serialport = { version = "4.2.1"}
