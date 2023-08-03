@@ -9,7 +9,9 @@ pub(crate) enum EvtType {
     ButtonRelease,
     Overcurrent,
     CriticalError,
-    TransportError
+    TransportError,
+    ParseError,
+    BoardBoot
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -21,22 +23,35 @@ pub(crate) struct CringeEvt {
 
 impl CringeEvt {
     pub(crate) fn from_serial(input: &str) -> Option<CringeEvt> {
-        let io_bank_num = input.chars().nth(2).unwrap().to_digit(10).unwrap_or(0) as u8;
-        let timestamp_ms = input[6..]
-            .chars()
-            .filter(|c| c.is_numeric())
-            .collect::<String>()
-            .parse::<u32>()
-            .unwrap_or(0);
+        // example: <I11H T114374>
+        
+        let mut io_bank_num = 0;
+        let mut timestamp_ms = 0;
+        let mut event_type = EvtType::ParseError;
+        for s in input.clone().replace(['<','>'],"").split_ascii_whitespace(){
+            // println!("{}",s);
+            match s.chars().nth(0).unwrap() {
+                'I' => {
+                    event_type = match s.chars().last().unwrap() {
+                        'H' => EvtType::ButtonPress,
+                        'L' => EvtType::ButtonRelease,
+                        _ => continue
+                    };
+                    io_bank_num = s.chars().filter(|c| c.is_numeric())
+                        .collect::<String>()
+                        .parse::<u8>()
+                        .unwrap_or(0);
+                    },
+                'T' => {
+                    timestamp_ms = s.chars().filter(|c| c.is_numeric())
+                        .collect::<String>()
+                        .parse::<u32>()
+                        .unwrap_or(0);
+                }
+            _ => continue
+            }
+        }
 
-        let event_type = match input.chars().nth(3).unwrap() {
-            'H' => EvtType::ButtonPress,
-            'L' => EvtType::ButtonRelease,
-            'O' => EvtType::Overcurrent,
-            'C' => EvtType::CriticalError,
-            'T' => EvtType::TransportError,
-            _ => return None
-        };
         Some(CringeEvt {
             io_bank_num,
             event_type,

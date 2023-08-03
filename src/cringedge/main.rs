@@ -33,7 +33,19 @@ fn main() {
             match listener.accept() {
                 Ok((mut socket, addr)) => {
                     debug!("Got a client: {:?} - {:?}", socket, addr);
-                    socket.write_all(b"hello world").ok();
+
+                    let hello_evt = CringeEvt {
+                        io_bank_num: 0,
+                        event_type: cringeTypes::EvtType::BoardBoot,
+                        timestamp_ms: 0
+                    };
+
+                    let hello_evt_u8 = [
+                        serde_json::to_string(&hello_evt).unwrap().as_bytes(),
+                        "\n".as_bytes()
+                    ].concat();
+                    
+                    socket.write_all(&hello_evt_u8).ok();
 
                     loop {
                         let event = rx.recv().unwrap();
