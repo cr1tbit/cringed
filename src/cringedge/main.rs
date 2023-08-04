@@ -4,6 +4,7 @@ pub mod cringeTypes;
 use std::io::Write;
 use std::os::unix::net::UnixListener;
 use std::os::unix::prelude::PermissionsExt;
+use std::process;
 use std::sync::mpsc;
 use std::thread;
 
@@ -22,6 +23,7 @@ fn main() {
     let socket_filename = format!("{}/events.sock", CRINGED_TMP_PATH);
 
     thread::spawn(move || {
+        fs::create_dir(CRINGED_TMP_PATH).ok();
         fs::remove_file(&socket_filename).ok();
 
         let listener = match UnixListener::bind(
@@ -29,7 +31,7 @@ fn main() {
             Ok(sock) => sock,
             Err(e) => {
                 warn!("Couldn't connect: {e:?}");
-                return
+                process::exit(1);
             }
         };
 
