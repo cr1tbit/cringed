@@ -1,0 +1,11 @@
+[Unit]
+Description=Cringed serial port service
+
+[Service]
+Type=simple
+ExecStart=RUST_LOG=debug /opt/cringed/cringedge-handler >> /tmp/cringed/log.txt
+Restart=on-failure
+TimeoutSec=5
+
+[Install]
+WantedBy=default.target

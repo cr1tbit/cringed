@@ -3,6 +3,7 @@ pub mod cringeTypes;
 
 use std::io::Write;
 use std::os::unix::net::UnixListener;
+use std::os::unix::prelude::PermissionsExt;
 use std::sync::mpsc;
 use std::thread;
 
@@ -18,14 +19,28 @@ fn main() {
     let (tx, rx)
         : (mpsc::Sender<CringeEvt>, mpsc::Receiver<CringeEvt>) = mpsc::channel();
 
+    let socket_filename = format!("{}/events.sock", CRINGED_TMP_PATH);
+
     thread::spawn(move || {
-        fs::remove_file(format!("{}/events.sock",CRINGED_TMP_PATH)).ok();
+        fs::remove_file(&socket_filename).ok();
 
         let listener = match UnixListener::bind(
             format!("{}/events.sock", CRINGED_TMP_PATH)) {
             Ok(sock) => sock,
             Err(e) => {
                 warn!("Couldn't connect: {e:?}");
+                return
+            }
+        };
+
+        match fs::metadata(&socket_filename){
+            Ok(p) => {
+                let mut perms = p.permissions();
+                perms.set_mode(0o777);
+                fs::set_permissions(&socket_filename, perms).ok();
+            }
+            Err(_) => {
+                warn!("Couldn't set permissions for socket file");
                 return
             }
         };
