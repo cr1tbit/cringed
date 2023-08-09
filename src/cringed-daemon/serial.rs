@@ -6,7 +6,7 @@ use std::sync::mpsc;
 use log::{debug, info, warn};
 use chrono::Local;
 
-use crate::cringeTypes::{CringeEvt, EvtType, CRINGED_TMP_PATH};
+use crate::cringeTypes::{CringeEvt, CRINGED_TMP_PATH};
 
 struct TmpLogFile {
     file: fs::File,
@@ -106,7 +106,6 @@ fn receive_loop(path: &str, devname: &str, tx: mpsc::Sender<CringeEvt>){
                 println!("Error reading from serial port: {}", e);
                 return;
             }
-            _ => {}
         }
     }
 }

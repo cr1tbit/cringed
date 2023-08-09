@@ -9,7 +9,7 @@ use std::sync::mpsc;
 use std::thread;
 
 use std::fs;
-use log::{debug, info, warn};
+use log::{debug, warn};
 
 use crate::cringeTypes::{CringeEvt, CRINGED_TMP_PATH};
 

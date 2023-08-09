@@ -1,32 +1,27 @@
 [package]
 name = "cringed"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "server"
-path = "src/server/main.rs"
-
-[[bin]]
-name = "cringedge-handler"
-path = "src/cringedge/main.rs"
+name = "daemon"
+path = "src/cringed-daemon/main.rs"
 
 [[bin]]
 name = "client"
-path = "src/mockListener/main.rs"
+path = "src/cringed-cli/main.rs"
 
 [dependencies]
-
 serialport = { version = "4.2.1"}
-engineioxide = "0.3.0"
-socketioxide = {  }
+# engineioxide = "0.3.0"
+# socketioxide = {  }
+once_cell = {}
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-once_cell = {}
 axum = { version = "0.6.10" }
 warp = { version = "0.3.1" }
 hyper = { version = "0.14.26" }
