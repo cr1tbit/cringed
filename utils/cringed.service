@@ -3,8 +3,8 @@ Description=Cringed serial port service
 
 [Service]
 Type=simple
-Environment="RUST_LOG=debug"
-ExecStart=/opt/cringed/cringedge-handler
+Environment="RUST_LOG=info"
+ExecStart=/opt/cringed/cringed-daemon
 Restart=on-failure
 TimeoutSec=5
 

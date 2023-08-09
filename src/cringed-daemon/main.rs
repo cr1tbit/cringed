@@ -1,5 +1,5 @@
 mod serial;
-pub mod cringeTypes;
+pub mod cringe_types;
 
 use std::io::Write;
 use std::os::unix::net::UnixListener;
@@ -11,7 +11,7 @@ use std::thread;
 use std::fs;
 use log::{debug, warn};
 
-use crate::cringeTypes::{CringeEvt, CRINGED_TMP_PATH};
+use crate::cringe_types::{CringeEvt, CRINGED_TMP_PATH};
 
 
 fn main() {
@@ -53,7 +53,7 @@ fn main() {
 
                     let hello_evt = CringeEvt {
                         io_bank_num: 0,
-                        event_type: cringeTypes::EvtType::BoardBoot,
+                        event_type: cringe_types::EvtType::BoardBoot,
                         timestamp_ms: 0
                     };
 
