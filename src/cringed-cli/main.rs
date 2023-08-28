@@ -5,29 +5,19 @@ use log::{debug, info, warn};
 
 use std::path::PathBuf;
 
-use clap::{arg, command, value_parser, ArgAction, Command};
+use clap::{arg, command, value_parser, Command, Arg};
 
 const EVENT_SOCKET_PATH: &'static str = "/tmp/cringed/events.sock";
 
 /*
-
-cringed
-
-cringed status
-
-cringed remote 
-cringed remote ping
-cringed remote 
-
-
-
+    cringed
+    cringed status
+    cringed remote
+    cringed events
+    cringed flash
 */
 
-
-
 fn main() {
-    env_logger::init();
-
     let matches = command!() // requires `cargo` feature
         // .arg(arg!([name] "Optional name to operate on"))
         // .arg(
@@ -38,46 +28,73 @@ fn main() {
         //     .required(false)
         //     .value_parser(value_parser!(PathBuf)),
         // )
+        // .arg(
+        //     Arg::new("v")
+        //         .long("v")
+        //         .action(clap::ArgAction::Count)
+        // )
         .arg(arg!(
-            -d --debug ... "Turn debugging information on"
+            -v --verbose ... "Set logs verbosity"
         ))
         .subcommand(
             Command::new("status")
                 .about("print the status of the daemon and connected devices")
+        ).subcommand(
+            Command::new("remote")
+                .about("get remote device capabilities")
+        ).subcommand(
+            Command::new("events")
+                .about("Show events stream")
+        ).subcommand(
+            Command::new("flash")
+                .about("flash binary to device")
         )
         .get_matches();
 
     // You can check the value provided by positional arguments, or option arguments
-    if let Some(name) = matches.get_one::<String>("name") {
-        println!("Value for name: {name}");
-    }
+    // if let Some(name) = matches.get_one::<String>("name") {
+    //     println!("Value for name: {name}");
+    // }
 
-    if let Some(config_path) = matches.get_one::<PathBuf>("config") {
-        println!("Value for config: {}", config_path.display());
-    }
+    // if let Some(config_path) = matches.get_one::<PathBuf>("config") {
+    //     println!("Value for config: {}", config_path.display());
+    // }
 
     // You can see how many times a particular flag or argument occurred
     // Note, only flags can have multiple occurrences
+
+    let level;
+
     match matches
-        .get_one::<u8>("debug")
+        .get_one::<u8>("verbose")
         .expect("Count's are defaulted")
     {
-        0 => println!("Debug mode is off"),
-        1 => println!("Debug mode is kind of on"),
-        2 => println!("Debug mode is on"),
-        _ => println!("Don't be crazy"),
+        0 => level="warn",
+        1 => level="info",
+        2 => level="debug",
+        _ => level="trace",
     }
+
+    env_logger::init_from_env(
+        env_logger::Env::default()
+        .filter_or(env_logger::DEFAULT_FILTER_ENV, level));
 
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd
-    if let Some(matches) = matches.subcommand_matches("status") {
-        println!("Printing status...");
-    }
 
-    // peek_events(EVENT_SOCKET_PATH);      
+    match matches.subcommand_name() {
+        Some("events") => peek_events(EVENT_SOCKET_PATH),
+        Some("status") => debug!("status subcommand"),
+        Some("remote") => info!("Remote subcommand"),
+        Some("flash") => warn!("Flash subcommand"),
+        None => println!("No subcommand was used"),
+        _ => unreachable!(),
+    }
+    std::process::exit(0);
 }
 
 fn peek_events(socket_path : &str){
+    info!("Opening event stream from {}", socket_path);
     loop{
         let stream = match UnixStream::connect(socket_path) {
             Err(_) => continue,
